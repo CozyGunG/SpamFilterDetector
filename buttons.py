@@ -5,8 +5,12 @@ Author: Alex Kim
 '''
 import tkinter as tk
 from tkinter import filedialog
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
 import pandas as pd
 import globalVar
+
+ps = PorterStemmer()
 
 
 class OpenFileBtn(tk.Button):
@@ -29,20 +33,21 @@ class OpenFileBtn(tk.Button):
 
         # Clean the dataset
         train_set['abstract'] = train_set['abstract'].str.replace('\W', ' ')  # Removes punctuation
-        train_set['abstract data'] = train_set['abstract data'].str.lower()
-        train_set['abstract data'] = train_set['abstract data'].str.split()
+        split_abstracts = [word_tokenize(abstract) for abstract in train_set['abstract']]
 
         # Set up dictionary
-        dictionary = [word for abstract in train_set['abstract data']
+        dictionary = [ps.stem(word) for abstract in split_abstracts
                                         for word in abstract]
         dictionary = list(set(dictionary))
+        print(dictionary)
 
         # Initialise word_counts to 0 for each unique word for each abstract
         word_count_per_abstract = {unique_word: [0] * len(train_set['abstract']) for unique_word in dictionary}
 
         # Fill in the word counts
-        for index, abstract in enumerate(train_set['abstract data']):
+        for index, abstract in enumerate(split_abstracts):
             for word in abstract:
+                word = ps.stem(word)
                 word_count_per_abstract[word][index] += 1
 
         # Get the total word count for each word
