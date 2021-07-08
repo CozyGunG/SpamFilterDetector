@@ -8,6 +8,7 @@ from tkinter import filedialog
 import pandas as pd
 import globalVar
 
+
 class OpenFileBtn(tk.Button):
     def __init__(self):
         super().__init__(text='Open File', width=18, bg=globalVar.WHITE, command=lambda: self.onclick())
@@ -25,21 +26,28 @@ class OpenFileBtn(tk.Button):
 
     def process(self):
         train_set = pd.read_csv(self.filename)
-        print(train_set)
 
         # Clean the dataset
         train_set['abstract'] = train_set['abstract'].str.replace('\W', ' ')  # Removes punctuation
-        train_set['abstract'] = train_set['abstract'].str.lower()
-        train_set['abstract'] = train_set['abstract'].str.split()
+        train_set['abstract data'] = train_set['abstract data'].str.lower()
+        train_set['abstract data'] = train_set['abstract data'].str.split()
 
         # Set up dictionary
-        dict = [word for abstract in train_set['abstract']
-                        for word in abstract]
-        dict = list(set(dict))
+        dictionary = [word for abstract in train_set['abstract data']
+                                        for word in abstract]
+        dictionary = list(set(dictionary))
 
-        word_count_per_abstract = {unique_word: [0] * len(train_set['abstract']) for unique_word in dict}
+        # Initialise word_counts to 0 for each unique word for each abstract
+        word_count_per_abstract = {unique_word: [0] * len(train_set['abstract']) for unique_word in dictionary}
 
+        # Fill in the word counts
+        for index, abstract in enumerate(train_set['abstract data']):
+            for word in abstract:
+                word_count_per_abstract[word][index] += 1
 
-
+        # Get the total word count for each word
+        total_word_count = {}
+        for word in dictionary:
+            total_word_count[word] = sum(word_count_per_abstract[word])
 
 # Extend a class then override the methods of the child class

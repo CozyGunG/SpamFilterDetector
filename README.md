@@ -1,2 +1,5 @@
 # SpamFilterDetector
-Using Bayesian algorithms to differentiate spam mails to non-spam mails
+Uses Naive Bayesian algorithm to differentiate spam mails to non-spam mails
+
+## Before Running
+- asda
