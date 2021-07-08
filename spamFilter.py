@@ -4,7 +4,7 @@ Author: Alex Kim
 '''
 import tkinter as tk
 import globalVar
-import openFile
+import buttons
 import numpy as np
 
 class MainMenu:
@@ -24,7 +24,7 @@ class MainMenu:
         new_display()
         
     def format_display(self):
-        btn1 = openFile.OpenFileBtn()
+        btn1 = buttons.OpenFileBtn()
         btn1.grid(row=1, column=0, sticky=tk.NSEW)
         # tk.Button(self.display, text='Open File', width=18, command=lambda: self.swap_display(openFile.OpenFileBtn)) \
         #     .grid(row=1, column=0, sticky=tk.NSEW)
