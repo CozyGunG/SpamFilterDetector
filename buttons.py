@@ -17,13 +17,13 @@ import globalVar
 class OpenFileBtn(tk.Button):
     def __init__(self):
         super().__init__(text='Open File', width=18, bg=globalVar.WHITE, command=lambda: self.onclick())
-        self.filename = "/"
+        self.filename = ""
 
     def onclick(self):
         self.openFile()
-        if self.filename != "/":
+        if self.filename != "":
             self.process()
-            self.filename = "/"
+            self.filename = ""
 
     def openFile(self):
         self.filename = filedialog.askopenfilename(initialdir="/Users/alexk/Compsci 361/Assignment3", title="Select A File",
@@ -32,21 +32,24 @@ class OpenFileBtn(tk.Button):
     def process(self):
         train_set = pd.read_csv(self.filename)
 
+        abstracts_df = train_set['abstract']
+        classes_df = train_set['class']
+
         # Clean the dataset
-        train_set['abstract'] = train_set['abstract'].str.replace('\W', ' ')  # Removes punctuation
-        train_set['abstract'] = train_set['abstract'].str.lower()
-        train_set['abstract'] = train_set['abstract'].str.split()
+        abstracts_df = abstracts_df.str.replace('\W', ' ')  # Removes punctuation
+        abstracts_df = abstracts_df.str.lower()
+        abstracts_df = abstracts_df.str.split()
 
         # Set up dictionary
-        dictionary = [word for abstract in train_set['abstract']
+        dictionary = [word for abstract in abstracts_df
                                         for word in abstract]
         dictionary = list(set(dictionary))
 
         # Initialise word_counts to 0 for each unique word for each abstract
-        word_count_per_abstract = {unique_word: [0] * len(train_set['abstract']) for unique_word in dictionary}
+        word_count_per_abstract = {unique_word: [0] * len(abstracts_df) for unique_word in dictionary}
 
         # Fill in the word counts
-        for index, abstract in enumerate(train_set['abstract']):
+        for index, abstract in enumerate(abstracts_df):
             for word in abstract:
                 word_count_per_abstract[word][index] += 1
 
@@ -61,29 +64,34 @@ class OpenFileBtn(tk.Button):
             df[word] = word_count_per_abstract[word]
         word_counts_df = pd.DataFrame(df)
 
-        # Isolate abstract
-        index = train_set.index
-        A_index = index[train_set['class'] == "A"]
-        A_abstract = word_counts_df.iloc[A_index]
-        B_index = index[train_set['class'] == "B"]
-        B_abstract = word_counts_df.iloc[B_index]
-        E_index = index[train_set['class'] == "E"]
-        E_abstract = word_counts_df.iloc[E_index]
-        V_index = index[train_set['class'] == "V"]
-        V_abstract = word_counts_df.iloc[V_index]
+        # Process each class on different threads
+        threadA = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "A"))
+        threadA.start()
+        threadB = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "B"))
+        threadB.start()
+        threadE = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "E"))
+        threadE.start()
+        threadV = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "V"))
+        threadV.start()
+
+
+        threadA.join()
+        threadB.join()
+        threadE.join()
+        threadV.join()
+
+
+
+    def ThreadFunc(self, class_set_df, word_counts_df, classvar):
+        # Isolate each class
+        index = class_set_df.index
+        class_index = index[class_set_df == classvar]
+        class_abstract = word_counts_df.iloc[class_index]
 
         # Number of Each Abstract
-        n_A = len(A_abstract)
-        n_B = len(B_abstract)
-        n_E = len(E_abstract)
-        n_V = len(V_abstract)
+        n_class = len(class_abstract)
 
         # Calculate probabilities of each abstract
-        p_A = n_A / len(train_set)
-        p_B = n_B / len(train_set)
-        p_E = n_E / len(train_set)
-        p_V = n_V / len(train_set)
+        p_class = n_class / len(class_set_df)
 
-
-
-# Extend a class then override the methods of the child class
+        print(classvar + " Has Finished")
