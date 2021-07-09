@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import filedialog
 import pandas as pd
 from threading import Thread
+from math import log
 '''from PyQt5.QtWidgets import (
     QApplication,
     QLabel
@@ -43,10 +44,10 @@ class OpenFileBtn(tk.Button):
         # Set up dictionary
         dictionary = [word for abstract in abstracts_df
                                         for word in abstract]
-        dictionary = list(set(dictionary))
+        self.dictionary = list(set(dictionary))
 
         # Initialise word_counts to 0 for each unique word for each abstract
-        word_count_per_abstract = {unique_word: [0] * len(abstracts_df) for unique_word in dictionary}
+        word_count_per_abstract = {unique_word: [0] * len(abstracts_df) for unique_word in self.dictionary}
 
         # Fill in the word counts
         for index, abstract in enumerate(abstracts_df):
@@ -55,30 +56,30 @@ class OpenFileBtn(tk.Button):
 
         # Get the total word count for each word
         total_word_count = {}
-        for word in dictionary:
+        for word in self.dictionary:
             total_word_count[word] = sum(word_count_per_abstract[word])
 
         # Create a dataframe of the word counts for each abstract
         df = {}
-        for word in dictionary:
+        for word in self.dictionary:
             df[word] = word_count_per_abstract[word]
         word_counts_df = pd.DataFrame(df)
 
         # Process each class on different threads
-        threadA = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "A"))
-        threadA.start()
-        threadB = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "B"))
-        threadB.start()
-        threadE = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "E"))
-        threadE.start()
-        threadV = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "V"))
-        threadV.start()
+        thread_A = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "A"))
+        thread_A.start()
+        thread_B = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "B"))
+        thread_B.start()
+        thread_E = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "E"))
+        thread_E.start()
+        thread_V = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "V"))
+        thread_V.start()
 
 
-        threadA.join()
-        threadB.join()
-        threadE.join()
-        threadV.join()
+        thread_A.join()
+        thread_B.join()
+        thread_E.join()
+        thread_V.join()
 
 
 
@@ -91,7 +92,20 @@ class OpenFileBtn(tk.Button):
         # Number of Each Abstract
         n_class = len(class_abstract)
 
+        # Size of Dictionary
+        n_dictionary = len(self.dictionary)
+
         # Calculate probabilities of each abstract
         p_class = n_class / len(class_set_df)
 
-        print(classvar + " Has Finished")
+        # Laplace smoothing Constant
+        alpha = 1
+
+        p_word_given_class = {unique_word:0 for unique_word in self.dictionary}
+
+        for word in self.dictionary:
+            n_word_given_class = class_abstract[word].sum()
+            p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha*n_dictionary)
+
+        # Using log for probabilities to prevent underflow (to 0) of very small probability float values
+        p_class_given_abstract = log(p_class, 10)
