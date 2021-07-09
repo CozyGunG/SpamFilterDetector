@@ -1,5 +1,5 @@
 '''
-Buttons used for the GUI Display
+Functions used in the GUI
 
 Author: Alex Kim
 '''
@@ -15,12 +15,9 @@ from math import log
 import globalVar
 
 
-class OpenFileBtn(tk.Button):
+class OpenFile():
     def __init__(self):
-        super().__init__(text='Open File', width=18, bg=globalVar.WHITE, command=lambda: self.onclick())
         self.filename = ""
-
-    def onclick(self):
         self.openFile()
         if self.filename != "":
             self.process()
@@ -65,6 +62,9 @@ class OpenFileBtn(tk.Button):
             df[word] = word_count_per_abstract[word]
         word_counts_df = pd.DataFrame(df)
 
+        self.p_word_given_class = {}
+        self.p_class_given_abstract = {}
+
         # Process each class on different threads
         thread_A = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "A"))
         thread_A.start()
@@ -74,7 +74,6 @@ class OpenFileBtn(tk.Button):
         thread_E.start()
         thread_V = Thread(target=self.ThreadFunc(classes_df, word_counts_df, "V"))
         thread_V.start()
-
 
         thread_A.join()
         thread_B.join()
@@ -106,6 +105,7 @@ class OpenFileBtn(tk.Button):
         for word in self.dictionary:
             n_word_given_class = class_abstract[word].sum()
             p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha*n_dictionary)
+        self.p_word_given_class[classvar] = p_word_given_class
 
         # Using log for probabilities to prevent underflow (to 0) of very small probability float values
-        p_class_given_abstract = log(p_class, 10)
+        self.p_class_given_abstract[classvar] = log(p_class, 10)
