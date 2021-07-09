@@ -20,7 +20,7 @@ class OpenFile():
         self.filename = ""
         self.openFile()
         if self.filename != "":
-            self.process()
+            Thread(target=self.process).start()
             self.filename = ""
 
     def openFile(self):
