@@ -26,6 +26,9 @@ class MainMenu:
     def format_display(self):
         btn1 = buttons.OpenFileBtn()
         btn1.grid(row=1, column=0, sticky=tk.NSEW)
+
+        btn2 = tk.Button(self.display, text='Analyze', width=18, bg=globalVar.WHITE, command=lambda: buttons.SpamFilter())
+        btn2.grid(row=2, column=0, sticky=tk.NSEW)
         # tk.Button(self.display, text='Open File', width=18, command=lambda: self.swap_display(openFile.OpenFileBtn)) \
         #     .grid(row=1, column=0, sticky=tk.NSEW)
 
