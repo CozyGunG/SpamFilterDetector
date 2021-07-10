@@ -24,11 +24,9 @@ class MainMenu:
         new_display()
 
     def format_display(self):
-        btn1 = tk.Button(self.display, text='Open File', width=18, bg=globalVar.WHITE,
-                         command=lambda: functions.OpenFile())
-        btn1.grid(row=1, column=0, sticky=tk.NSEW)
-        # tk.Button(self.display, text='Open File', width=18, command=lambda: self.swap_display(openFile.OpenFileBtn)) \
-        #     .grid(row=1, column=0, sticky=tk.NSEW)
+        csv_file = functions.OpenFile()
+        tk.Button(self.display, text='Open File', width=18, bg=globalVar.WHITE, command=lambda: csv_file.onclick()) \
+            .grid(row=1, column=0, sticky=tk.NSEW)
 
 if __name__ == '__main__':
     MainMenu()
