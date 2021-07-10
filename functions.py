@@ -104,3 +104,6 @@ class OpenFile():
         # Using log for probabilities to prevent underflow (to 0) of very small probability float values
         self.p_class_given_abstract[classvar] = log(p_class, 10)
 
+class SpamFilter:
+    def __init__(self):
+        print("This works")
