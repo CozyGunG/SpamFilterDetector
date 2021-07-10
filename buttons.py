@@ -86,6 +86,4 @@ class OpenFileBtn(tk.Button):
 
 
 
-class SpamFilter:
-    def __init__(self):
-        print("This works")
+# Extend a class then override the methods of the child class
