@@ -7,28 +7,28 @@ import tkinter as tk
 from tkinter import filedialog
 import pandas as pd
 from threading import Thread
+import re
 from math import log
+import globalVar
 
 '''from PyQt5.QtWidgets import (
     QApplication,
     QLabel
 )'''
-import globalVar
 
 
-class OpenFile():
+class OpenFile:
 
     def __init__(self):
         self.filename = ""
         self.dictionary = []
         self.p_word_given_class = {}
-        self.p_class_given_abstract = {}
+        self.p_class = {}
 
     def onclick(self):
         self.open_file()
         if self.filename != "":
             Thread(target=self.process).start()
-            self.filename = ""
 
     def open_file(self):
         self.filename = filedialog.askopenfilename(initialdir="/Users/alexk/Compsci 361/Assignment3",
@@ -36,6 +36,7 @@ class OpenFile():
                                                    filetypes=(("CSV files", "*.csv"), ("All Files", "*.*")))
 
     def process(self):
+        print("Started Processing")
         train_set = pd.read_csv(self.filename)
 
         abstracts_df = train_set['abstract']
@@ -48,7 +49,7 @@ class OpenFile():
 
         # Set up dictionary
         dictionary = [word for abstract in abstracts_df
-                                for word in abstract]
+                      for word in abstract]
         self.dictionary = list(set(dictionary))
 
         # Initialise word_counts to 0 for each unique word for each abstract
@@ -71,10 +72,12 @@ class OpenFile():
         word_counts_df = pd.DataFrame(df)
 
         # Process each class on different threads
-        Thread(target=self.process_class(classes_df, word_counts_df, "A")).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, "B")).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, "E")).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, "V")).start()
+        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_A)).start()
+        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_B)).start()
+        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_E)).start()
+        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_V)).start()
+
+        print("Finished Processing Data")
 
     def process_class(self, class_set_df, word_counts_df, classvar):
         # Isolate each class
@@ -101,9 +104,46 @@ class OpenFile():
             p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha * n_dictionary)
         self.p_word_given_class[classvar] = p_word_given_class
 
-        # Using log for probabilities to prevent underflow (to 0) of very small probability float values
-        self.p_class_given_abstract[classvar] = log(p_class, 10)
+        self.p_class[classvar] = p_class
+
+        print("Finished" + classvar)
+
+    def get_p_class(self):
+        return self.p_class
+
+    def get_p_word_give_class(self):
+        return self.p_word_given_class
+
 
 class SpamFilter:
-    def __init__(self):
-        print("This works")
+    def __init__(self, csv_file, text_box):
+        self.csv_file = csv_file
+        self.text_box = text_box
+        self.prediction = ""
+
+    def onclick(self):
+        self.process()
+        print("Prediction is " + self.prediction)
+
+    def process(self):
+        abstract = self.text_box.get(1.0, "end-1c")
+        abstract = re.sub('\W', ' ', abstract)
+        abstract = abstract.lower().split()
+
+        p_class_hashmap = self.csv_file.get_p_class()
+        p_word_given_class_hashmap = self.csv_file.get_p_word_give_class()
+
+        # Using log for probabilities to prevent underflow (to 0) of very small probability float values
+        p_class_given_abstract_hashmap = {
+            globalVar.class_A: log(p_class_hashmap[globalVar.class_A], 10),
+            globalVar.class_B: log(p_class_hashmap[globalVar.class_B], 10),
+            globalVar.class_E: log(p_class_hashmap[globalVar.class_E], 10),
+            globalVar.class_V: log(p_class_hashmap[globalVar.class_V], 10)
+        }
+
+        for word in abstract:
+            for c in p_class_given_abstract_hashmap:
+                if word in p_word_given_class_hashmap[c]:
+                    p_class_given_abstract_hashmap[c] += log(p_word_given_class_hashmap[c][word], 10)
+
+        self.prediction = max(p_class_given_abstract_hashmap, key=p_class_given_abstract_hashmap.get)
