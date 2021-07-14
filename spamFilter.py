@@ -40,14 +40,15 @@ class MainMenu:
         button_frame.pack(pady=10)
 
         pb = ttk.Progressbar(self.display, orient='horizontal', mode='determinate', length=500)
-
         lb = tk.Label(self.display, width=60, bg=globalVar.LIGHT_GREEN)
 
-        open_file_btn = functions.OpenFile(pb, lb)
+        data = functions.ProcessData(pb, lb)
+
+        open_file_btn = functions.OpenFile(text_box)
         tk.Button(button_frame, text='Open File', width=20, bg=globalVar.WHITE, command=lambda: open_file_btn.onclick()) \
             .grid(row=0, column=0, padx=10)
 
-        analyze_btn = functions.SpamFilter(open_file_btn, text_box, lb)
+        analyze_btn = functions.SpamFilter(data, text_box, lb)
         tk.Button(button_frame, text='Analyze', width=20, bg=globalVar.WHITE, command=lambda: analyze_btn.onclick()) \
             .grid(row=0, column=1, padx=10)
 

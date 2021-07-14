@@ -18,6 +18,22 @@ import globalVar
 
 
 class OpenFile:
+    def __init__(self, text_box):
+        self.text_box = text_box
+
+    def onclick(self):
+        filename = filedialog.askopenfilename(initialdir="/Users/alexk/Compsci 361/Assignment3",
+                                              title="Select A File",
+                                              filetypes=(("Text files", "*.txt"), ("All Files", "*.*")))
+        if filename != "":
+            f = open(filename, "r")
+            abstract = f.read()
+
+            self.text_box.delete(1.0, "end")
+            self.text_box.insert(1.0, abstract)
+
+
+class ProcessData:
     def __init__(self, pb, lb):
         self.pb = pb
         self.lb = lb
@@ -25,20 +41,10 @@ class OpenFile:
         self.dictionary = []
         self.p_word_given_class = {}
         self.p_class = {}
-
-    def onclick(self):
-        self.open_file()
-        if self.filename != "":
-            Thread(target=self.process).start()
-
-
-    def open_file(self):
-        self.filename = filedialog.askopenfilename(initialdir="/Users/alexk/Compsci 361/Assignment3",
-                                                   title="Select A File",
-                                                   filetypes=(("CSV files", "*.csv"), ("All Files", "*.*")))
+        Thread(target=self.process).start()
 
     def process(self):
-        train_set = pd.read_csv(self.filename, header=1, names=["abstract", "class"])
+        train_set = pd.read_csv("emails.csv", header=1, names=["abstract", "class"])
 
         self.pb.pack(pady=10)
         self.lb.pack()
