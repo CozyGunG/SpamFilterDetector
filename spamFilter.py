@@ -3,6 +3,7 @@ Spam Filtering using Bayesian Algorithms
 Author: Alex Kim
 '''
 import tkinter as tk
+from tkinter import ttk
 import globalVar
 import functions
 import numpy as np
@@ -32,13 +33,17 @@ class MainMenu:
                  font=globalVar.HEADER_FONT, anchor='w') \
             .pack(fill='both', padx=40)
 
-        text_box = tk.Text(self.display, height=5, width=60, font=globalVar.INPUT_FONT)
+        text_box = tk.Text(self.display, height=10, width=60, font=globalVar.INPUT_FONT)
         text_box.pack()
 
         button_frame = tk.Frame(self.display, bg=globalVar.LIGHT_GREEN)
         button_frame.pack(pady=10)
 
-        open_file_btn = functions.OpenFile()
+        pb = ttk.Progressbar(self.display, orient='horizontal', mode='determinate', length=500)
+
+        lb = tk.Label(self.display, width=60, bg=globalVar.LIGHT_GREEN)
+
+        open_file_btn = functions.OpenFile(pb, lb)
         tk.Button(button_frame, text='Open File', width=20, bg=globalVar.WHITE, command=lambda: open_file_btn.onclick()) \
             .grid(row=0, column=0, padx=10)
 

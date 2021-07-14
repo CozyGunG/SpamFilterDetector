@@ -10,6 +10,7 @@ import re
 from math import log
 
 import globalVar
+import prompts
 
 '''from PyQt5.QtWidgets import (
     QApplication,
@@ -18,13 +19,13 @@ import globalVar
 
 
 class OpenFile:
-
-    def __init__(self):
+    def __init__(self, pb, lb):
+        self.pb = pb
+        self.lb = lb
         self.filename = ""
         self.dictionary = []
         self.p_word_given_class = {}
         self.p_class = {}
-        self.abstracts_df = {}
 
     def onclick(self):
         self.open_file()
@@ -38,7 +39,9 @@ class OpenFile:
                                                    filetypes=(("CSV files", "*.csv"), ("All Files", "*.*")))
 
     def process(self):
-        print("Started Processing")
+        self.pb.pack(pady=10)
+        self.lb.pack()
+
         train_set = pd.read_csv(self.filename)
 
         abstracts_df = train_set['abstract']
@@ -48,6 +51,9 @@ class OpenFile:
         abstracts_df = abstracts_df.str.replace('\W', ' ')  # Removes punctuation
         abstracts_df = abstracts_df.str.lower()
         abstracts_df = abstracts_df.str.split()
+
+        self.pb['value'] = 10
+        self.lb.configure(text='Finished Cleaning the Dataset')
 
         # Set up dictionary
         dictionary = [word for abstract in abstracts_df
@@ -62,6 +68,9 @@ class OpenFile:
             for word in abstract:
                 word_count_per_abstract[word][index] += 1
 
+        self.pb['value'] = 20
+        self.lb.configure(text='Creating Word Counts')
+
         # Get the total word count for each word
         total_word_count = {}
         for word in self.dictionary:
@@ -73,42 +82,43 @@ class OpenFile:
             df[word] = word_count_per_abstract[word]
         word_counts_df = pd.DataFrame(df)
 
-        # Process each class on different threads
-        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_A)).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_B)).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_E)).start()
-        Thread(target=self.process_class(classes_df, word_counts_df, globalVar.class_V)).start()
+        self.pb['value'] = 60
+        self.lb.configure(text='Finished Creating Word Counts Dataframe')
 
-        print("Finished Processing Data")
+        class_var = [globalVar.class_A, globalVar.class_B, globalVar.class_E, globalVar.class_V]
 
-    def process_class(self, class_set_df, word_counts_df, classvar):
-        # Isolate each class
-        index = class_set_df.index
-        class_index = index[class_set_df == classvar]
-        class_abstract = word_counts_df.iloc[class_index]
+        for c in class_var:
+            # Isolate each class
+            index = classes_df.index
+            class_index = index[classes_df == c]
+            class_abstract = word_counts_df.iloc[class_index]
 
-        # Number of Each Abstract
-        n_class = len(class_abstract)
+            # Number of Each Abstract
+            n_class = len(class_abstract)
 
-        # Size of Dictionary
-        n_dictionary = len(self.dictionary)
+            # Size of Dictionary
+            n_dictionary = len(self.dictionary)
 
-        # Calculate probabilities of each abstract
-        p_class = n_class / len(class_set_df)
+            # Calculate probabilities of each abstract
+            p_class = n_class / len(classes_df)
 
-        # Laplace smoothing Constant
-        alpha = 1
+            # Laplace smoothing Constant
+            alpha = 1
 
-        p_word_given_class = {unique_word: 0 for unique_word in self.dictionary}
+            p_word_given_class = {unique_word: 0 for unique_word in self.dictionary}
 
-        for word in self.dictionary:
-            n_word_given_class = class_abstract[word].sum()
-            p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha * n_dictionary)
-        self.p_word_given_class[classvar] = p_word_given_class
+            for word in self.dictionary:
+                n_word_given_class = class_abstract[word].sum()
+                p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha * n_dictionary)
+            self.p_word_given_class[c] = p_word_given_class
 
-        self.p_class[classvar] = p_class
+            self.p_class[c] = p_class
 
-        print("Finished" + classvar)
+            self.pb['value'] += 10
+            self.lb.configure(text="Finished Processing " + c)
+
+        self.pb.pack_forget()
+        self.lb.pack_forget()
 
     def get_p_class(self):
         return self.p_class
