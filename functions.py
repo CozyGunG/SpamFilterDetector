@@ -3,12 +3,12 @@ Functions used in the GUI
 
 Author: Alex Kim
 '''
-import tkinter as tk
 from tkinter import filedialog
 import pandas as pd
 from threading import Thread
 import re
 from math import log
+
 import globalVar
 
 '''from PyQt5.QtWidgets import (
@@ -24,11 +24,13 @@ class OpenFile:
         self.dictionary = []
         self.p_word_given_class = {}
         self.p_class = {}
+        self.abstracts_df = {}
 
     def onclick(self):
         self.open_file()
         if self.filename != "":
             Thread(target=self.process).start()
+
 
     def open_file(self):
         self.filename = filedialog.askopenfilename(initialdir="/Users/alexk/Compsci 361/Assignment3",
