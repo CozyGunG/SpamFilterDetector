@@ -10,7 +10,5 @@ TITLE_FONT = 'courier 19 bold'
 HEADER_FONT = 'helvetica 11'
 INPUT_FONT = 'helvetica 16'
 
-class_A = 'A'
-class_B = 'B'
-class_E = 'E'
-class_V = 'V'
+CLASS_SPAM = 1
+CLASS_NOT_SPAM = 0

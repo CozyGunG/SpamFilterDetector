@@ -47,7 +47,7 @@ class MainMenu:
         tk.Button(button_frame, text='Open File', width=20, bg=globalVar.WHITE, command=lambda: open_file_btn.onclick()) \
             .grid(row=0, column=0, padx=10)
 
-        analyze_btn = functions.SpamFilter(open_file_btn, text_box)
+        analyze_btn = functions.SpamFilter(open_file_btn, text_box, lb)
         tk.Button(button_frame, text='Analyze', width=20, bg=globalVar.WHITE, command=lambda: analyze_btn.onclick()) \
             .grid(row=0, column=1, padx=10)
 

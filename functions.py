@@ -10,7 +10,6 @@ import re
 from math import log
 
 import globalVar
-import prompts
 
 '''from PyQt5.QtWidgets import (
     QApplication,
@@ -39,15 +38,16 @@ class OpenFile:
                                                    filetypes=(("CSV files", "*.csv"), ("All Files", "*.*")))
 
     def process(self):
+        train_set = pd.read_csv(self.filename, header=1, names=["abstract", "class"])
+
         self.pb.pack(pady=10)
         self.lb.pack()
-
-        train_set = pd.read_csv(self.filename)
 
         abstracts_df = train_set['abstract']
         classes_df = train_set['class']
 
         # Clean the dataset
+        abstracts_df = abstracts_df.str.replace('Subject:', '')
         abstracts_df = abstracts_df.str.replace('\W', ' ')  # Removes punctuation
         abstracts_df = abstracts_df.str.lower()
         abstracts_df = abstracts_df.str.split()
@@ -85,7 +85,7 @@ class OpenFile:
         self.pb['value'] = 60
         self.lb.configure(text='Finished Creating Word Counts Dataframe')
 
-        class_var = [globalVar.class_A, globalVar.class_B, globalVar.class_E, globalVar.class_V]
+        class_var = [globalVar.CLASS_SPAM, globalVar.CLASS_NOT_SPAM]
 
         for c in class_var:
             # Isolate each class
@@ -115,7 +115,7 @@ class OpenFile:
             self.p_class[c] = p_class
 
             self.pb['value'] += 10
-            self.lb.configure(text="Finished Processing " + c)
+            self.lb.configure(text="Finished Processing {}".format(c))
 
         self.pb.pack_forget()
         self.lb.pack_forget()
@@ -128,14 +128,16 @@ class OpenFile:
 
 
 class SpamFilter:
-    def __init__(self, csv_file, text_box):
+    def __init__(self, csv_file, text_box, lb):
         self.csv_file = csv_file
         self.text_box = text_box
         self.prediction = ""
+        self.lb = lb
 
     def onclick(self):
         self.process()
-        print("Prediction is " + self.prediction)
+        self.lb.pack()
+        self.lb.configure(text="Prediction is " + self.prediction)
 
     def process(self):
         abstract = self.text_box.get(1.0, "end-1c")
@@ -147,10 +149,8 @@ class SpamFilter:
 
         # Using log for probabilities to prevent underflow (to 0) of very small probability float values
         p_class_given_abstract_hashmap = {
-            globalVar.class_A: log(p_class_hashmap[globalVar.class_A], 10),
-            globalVar.class_B: log(p_class_hashmap[globalVar.class_B], 10),
-            globalVar.class_E: log(p_class_hashmap[globalVar.class_E], 10),
-            globalVar.class_V: log(p_class_hashmap[globalVar.class_V], 10)
+            globalVar.CLASS_SPAM: log(p_class_hashmap[globalVar.CLASS_SPAM], 10),
+            globalVar.CLASS_NOT_SPAM: log(p_class_hashmap[globalVar.CLASS_NOT_SPAM], 10)
         }
 
         for word in abstract:
@@ -158,4 +158,9 @@ class SpamFilter:
                 if word in p_word_given_class_hashmap[c]:
                     p_class_given_abstract_hashmap[c] += log(p_word_given_class_hashmap[c][word], 10)
 
-        self.prediction = max(p_class_given_abstract_hashmap, key=p_class_given_abstract_hashmap.get)
+        print(p_class_given_abstract_hashmap)
+
+        if max(p_class_given_abstract_hashmap, key=p_class_given_abstract_hashmap.get):
+            self.prediction = "spam"
+        else:
+            self.prediction = "not spam"
