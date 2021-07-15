@@ -4,4 +4,4 @@ NLTK Stemming was removed from the implementation due to inconsistencies.
 
 
 # Before Running
-- asda
+- Make sure that emails.csv is in the project folder

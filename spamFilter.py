@@ -4,9 +4,9 @@ Author: Alex Kim
 '''
 import tkinter as tk
 from tkinter import ttk
+
 import globalVar
 import functions
-import numpy as np
 
 class MainMenu:
     def __init__(self):

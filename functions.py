@@ -5,16 +5,22 @@ Author: Alex Kim
 '''
 from tkinter import filedialog
 import pandas as pd
+import numpy as np
 from threading import Thread
+from nltk.stem import WordNetLemmatizer
 import re
 from math import log
 
 import globalVar
 
-'''from PyQt5.QtWidgets import (
-    QApplication,
-    QLabel
-)'''
+
+def remove_stopwords(abstract):
+    return [word for word in abstract if word not in globalVar.STOP_WORDS]
+
+
+def lemmatize_abstract(abstract):
+    lemmatizer = WordNetLemmatizer()
+    return [lemmatizer.lemmatize(word) for word in abstract]
 
 
 class OpenFile:
@@ -33,12 +39,10 @@ class OpenFile:
             self.text_box.insert(1.0, abstract)
 
 
-class ProcessData:
+class ProcessData: #could be turned into a function instead of defining a whole class
     def __init__(self, pb, lb):
         self.pb = pb
         self.lb = lb
-        self.filename = ""
-        self.dictionary = []
         self.p_word_given_class = {}
         self.p_class = {}
         Thread(target=self.process).start()
@@ -53,21 +57,22 @@ class ProcessData:
         classes_df = train_set['class']
 
         # Clean the dataset
-        abstracts_df = abstracts_df.str.replace('Subject:', '')
         abstracts_df = abstracts_df.str.replace('\W', ' ')  # Removes punctuation
         abstracts_df = abstracts_df.str.lower()
         abstracts_df = abstracts_df.str.split()
+
+        abstracts_df = abstracts_df.apply(lambda abstract: remove_stopwords(abstract))
+        abstracts_df = abstracts_df.apply(lambda abstract: lemmatize_abstract(abstract))
 
         self.pb['value'] = 10
         self.lb.configure(text='Finished Cleaning the Dataset')
 
         # Set up dictionary
-        dictionary = [word for abstract in abstracts_df
-                      for word in abstract]
-        self.dictionary = list(set(dictionary))
+        dictionary = [word for abstract in abstracts_df for word in abstract]
+        dictionary = list(set(dictionary))
 
         # Initialise word_counts to 0 for each unique word for each abstract
-        word_count_per_abstract = {unique_word: [0] * len(abstracts_df) for unique_word in self.dictionary}
+        word_count_per_abstract = {unique_word: [0] * len(abstracts_df) for unique_word in dictionary}
 
         # Fill in the word counts
         for index, abstract in enumerate(abstracts_df):
@@ -77,16 +82,25 @@ class ProcessData:
         self.pb['value'] = 20
         self.lb.configure(text='Creating Word Counts')
 
+        DF_score = {unique_word: 0 for unique_word in dictionary}
+        for unique_word in dictionary:
+            for word_count in word_count_per_abstract[unique_word]:
+                if word_count > 0:
+                    DF_score[unique_word] += 1
+
+        IDF_score = {unique_word: log(len(train_set['abstract']) / DF_score[unique_word], 10)
+                     for unique_word in dictionary}
+
         # Get the total word count for each word
         total_word_count = {}
-        for word in self.dictionary:
+        for word in dictionary:
             total_word_count[word] = sum(word_count_per_abstract[word])
 
         # Create a dataframe of the word counts for each abstract
         df = {}
-        for word in self.dictionary:
+        for word in dictionary:
             df[word] = word_count_per_abstract[word]
-        word_counts_df = pd.DataFrame(df)
+        word_counts_per_abstract_df = pd.DataFrame(df)
 
         self.pb['value'] = 60
         self.lb.configure(text='Finished Creating Word Counts Dataframe')
@@ -94,28 +108,27 @@ class ProcessData:
         class_var = [globalVar.CLASS_SPAM, globalVar.CLASS_NOT_SPAM]
 
         for c in class_var:
-            # Isolate each class
+            # Isolate class
             index = classes_df.index
             class_index = index[classes_df == c]
-            class_abstract = word_counts_df.iloc[class_index]
+            class_word_counts_per_abstract_df = word_counts_per_abstract_df.iloc[class_index]
 
             # Number of Each Abstract
-            n_class = len(class_abstract)
+            n_word_given_class = {word: class_word_counts_per_abstract_df[word].sum() * IDF_score[word]
+                                  for word in dictionary}
+            n_class = sum(n_word_given_class.values())
+            print(n_class)
 
             # Size of Dictionary
-            n_dictionary = len(self.dictionary)
+            n_dictionary = len(dictionary)
 
             # Calculate probabilities of each abstract
             p_class = n_class / len(classes_df)
 
-            # Laplace smoothing Constant
-            alpha = 1
+            p_word_given_class = {unique_word: 0 for unique_word in dictionary}
 
-            p_word_given_class = {unique_word: 0 for unique_word in self.dictionary}
-
-            for word in self.dictionary:
-                n_word_given_class = class_abstract[word].sum()
-                p_word_given_class[word] = (n_word_given_class + alpha) / (n_class + alpha * n_dictionary)
+            for word in dictionary:
+                p_word_given_class[word] = (n_word_given_class[word] + globalVar.alpha) / (n_class + globalVar.alpha * n_dictionary)
             self.p_word_given_class[c] = p_word_given_class
 
             self.p_class[c] = p_class
