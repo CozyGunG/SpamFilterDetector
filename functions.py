@@ -1,11 +1,10 @@
 '''
-Functions used in the GUI
+Backend Functions used to Process the Data
 
 Author: Alex Kim
 '''
 from tkinter import filedialog
 import pandas as pd
-import numpy as np
 from threading import Thread
 from nltk.stem import WordNetLemmatizer
 import re
@@ -39,7 +38,7 @@ class OpenFile:
             self.text_box.insert(1.0, abstract)
 
 
-class ProcessData: #could be turned into a function instead of defining a whole class
+class ProcessData:
     def __init__(self, pb, lb):
         self.pb = pb
         self.lb = lb
@@ -57,7 +56,7 @@ class ProcessData: #could be turned into a function instead of defining a whole 
         classes_df = train_set['class']
 
         # Clean the dataset
-        abstracts_df = abstracts_df.str.replace('\W', ' ')  # Removes punctuation
+        abstracts_df = abstracts_df.str.replace('\W', ' ')
         abstracts_df = abstracts_df.str.lower()
         abstracts_df = abstracts_df.str.split()
 
@@ -117,7 +116,6 @@ class ProcessData: #could be turned into a function instead of defining a whole 
             n_word_given_class = {word: class_word_counts_per_abstract_df[word].sum() * IDF_score[word]
                                   for word in dictionary}
             n_class = sum(n_word_given_class.values())
-            print(n_class)
 
             # Size of Dictionary
             n_dictionary = len(dictionary)
@@ -126,8 +124,8 @@ class ProcessData: #could be turned into a function instead of defining a whole 
             p_class = n_class / len(classes_df)
 
             p_word_given_class = {unique_word: 0 for unique_word in dictionary}
-
             for word in dictionary:
+                # Use Laplace smoothing + DF-IDF to calculate the probabilities of each word
                 p_word_given_class[word] = (n_word_given_class[word] + globalVar.alpha) / (n_class + globalVar.alpha * n_dictionary)
             self.p_word_given_class[c] = p_word_given_class
 
@@ -159,10 +157,12 @@ class SpamFilter:
         self.lb.configure(text="Prediction is " + self.prediction)
 
     def process(self):
+        # Read the abstract in the text box; pre-process it
         abstract = self.text_box.get(1.0, "end-1c")
         abstract = re.sub('\W', ' ', abstract)
         abstract = abstract.lower().split()
 
+        # Get the probabilities from the csv file used to train the model
         p_class_hashmap = self.csv_file.get_p_class()
         p_word_given_class_hashmap = self.csv_file.get_p_word_give_class()
 
@@ -176,8 +176,6 @@ class SpamFilter:
             for c in p_class_given_abstract_hashmap:
                 if word in p_word_given_class_hashmap[c]:
                     p_class_given_abstract_hashmap[c] += log(p_word_given_class_hashmap[c][word], 10)
-
-        print(p_class_given_abstract_hashmap)
 
         if max(p_class_given_abstract_hashmap, key=p_class_given_abstract_hashmap.get):
             self.prediction = "spam"

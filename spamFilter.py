@@ -1,5 +1,7 @@
 '''
 Spam Filtering using Bayesian Algorithms
+Front End GUI
+
 Author: Alex Kim
 '''
 import tkinter as tk
