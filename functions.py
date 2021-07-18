@@ -81,23 +81,27 @@ class ProcessData:
         self.pb['value'] = 20
         self.lb.configure(text='Creating Word Counts')
 
-        DF_score = {unique_word: 0 for unique_word in dictionary}
-        for unique_word in dictionary:
+        # Get the total word count for each word // Trim the word counts <= 1 to reduce overfitting
+        total_word_count = {}
+        for word in dictionary:
+            word_count_sum = sum(word_count_per_abstract[word])
+            if word_count_sum > 1:
+                total_word_count[word] = word_count_sum
+
+        trimmed_dictionary = [word for word in total_word_count]
+
+        DF_score = {unique_word: 0 for unique_word in trimmed_dictionary}
+        for unique_word in trimmed_dictionary:
             for word_count in word_count_per_abstract[unique_word]:
                 if word_count > 0:
                     DF_score[unique_word] += 1
 
         IDF_score = {unique_word: log(len(train_set['abstract']) / DF_score[unique_word], 10)
-                     for unique_word in dictionary}
-
-        # Get the total word count for each word
-        total_word_count = {}
-        for word in dictionary:
-            total_word_count[word] = sum(word_count_per_abstract[word])
+                     for unique_word in trimmed_dictionary}
 
         # Create a dataframe of the word counts for each abstract
         df = {}
-        for word in dictionary:
+        for word in trimmed_dictionary:
             df[word] = word_count_per_abstract[word]
         word_counts_per_abstract_df = pd.DataFrame(df)
 
@@ -114,17 +118,17 @@ class ProcessData:
 
             # Number of Each Abstract
             n_word_given_class = {word: class_word_counts_per_abstract_df[word].sum() * IDF_score[word]
-                                  for word in dictionary}
+                                  for word in trimmed_dictionary}
             n_class = sum(n_word_given_class.values())
 
             # Size of Dictionary
-            n_dictionary = len(dictionary)
+            n_dictionary = len(trimmed_dictionary)
 
             # Calculate probabilities of each abstract
             p_class = n_class / len(classes_df)
 
-            p_word_given_class = {unique_word: 0 for unique_word in dictionary}
-            for word in dictionary:
+            p_word_given_class = {unique_word: 0 for unique_word in trimmed_dictionary}
+            for word in trimmed_dictionary:
                 # Use Laplace smoothing + DF-IDF to calculate the probabilities of each word
                 p_word_given_class[word] = (n_word_given_class[word] + globalVar.alpha) / (n_class + globalVar.alpha * n_dictionary)
             self.p_word_given_class[c] = p_word_given_class
